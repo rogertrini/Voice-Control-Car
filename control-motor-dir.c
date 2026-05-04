@@ -7,7 +7,8 @@
 
 // This code contains UART functions for turning on motors based on the
 // message received from UART. The design uses an ATMega328P micro controller.
-
+// This specific design implements the PWM signal to control the speed
+// of the motors. This gives a simple left and right direction control.
 #define F_CPU 16000000UL
 #include <avr/io.h>
 
@@ -18,8 +19,8 @@ void UART_init(){
 
 	UBRR0H = (ubrr >> 8);
 	UBRR0L = ubrr;
-
-	UCSR0B = (1 << RXEN0); // enable receiver
+    // enable receiver and transmitter
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0); 
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8-bit data
 }
 
@@ -58,7 +59,40 @@ void UART_receiveString(char *buffer, uint8_t max_len){
     buffer[i] = '\0'; // null terminate
 }
 
+// --------------------------- PWM + DIR CTRL ----------------------------
+/* Add the PWM signal for motor speed control*/
+void PWM_init(){
+    // PB1 = 0C1A, PB2 = 0C1B as outputs
+    DDRB |= (1 << PB1) | (1 << PB2);
 
+    // Fast PWM 8-bit, non-inverting mode
+    TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 <<WGM10);
+    TCCR1B = (1 << WGM12) | (1 << CS11); // prescaler = 8
+
+    // 0CR1A and 0CR1B control the duty cycles on those pins
+    // 128 = about 50% and 255 = full speed
+
+    // initially be stopped (speed = 0 %)
+    OCR1A = 0; // ENA speed
+    OCR1B = 0; // ENB speed
+}
+
+// speed helper funtions
+void setSpeed(uint8_t leftSpeed, uint8_t rightSpeed){
+    OCR1A = leftSpeed; // ENA
+    OCR1B = rightSpeed; // ENB
+}
+
+void clearDirectionPins(){
+    PORTD &= ~((1 << PD2) | (1 << PD3) | (1 << PD4) | (1 << PD5));
+}
+
+void stopMotors(){
+    setSpeed(0,0);
+    PORTD &= ~((1 << PD2) | (1 << PD3) | (1 << PD4) | (1 << PD5));
+}
+
+// -------------------------------- main ------------------------------------
 // main program that implements the outputs to 4 leds
 // it maps the characters F, B, L, R (forward, back, left, right)
 int main(void){
@@ -66,6 +100,7 @@ int main(void){
 	DDRD |= (1 << PD2) | (1 << PD3) | (1 << PD4) | (1 << PD5);
 
 	UART_init();
+    PWM_init();
 
 	while(1){
         
@@ -73,7 +108,8 @@ int main(void){
 		char cmd = UART_receive();
 
 		// Turn all outputs OFF first (default) evertime a message is received
-		PORTD &= ~((1 << PD2) | (1 << PD3) | (1 << PD4) | (1 << PD5));
+		// use new helper function
+        clearDirectionPins();
 
 		// Mapping commands to the motor controller
 
@@ -93,21 +129,25 @@ int main(void){
 		if (cmd == 'F'){ 
             // both sides forward
             PORTD |= (1 << PD2) | (1 << PD4);
+            setSpeed(180,180);
         }
         else if (cmd == 'B'){
             // both sides backward
             PORTD |= (1 << PD3) | (1 << PD5);
+            setSpeed(180,180);
         }
         else if (cmd == 'L'){
             // turn left
             PORTD |= (1 << PD3) | (1 << PD4);
+            setSpeed(90,180);
         }
         else if (cmd == 'R'){
             // turn right
             PORTD |= (1 << PD2) | (1 << PD5);
+            setSpeed(180, 90);
         }
         else if (cmd == 'S'){
-            // already off
+            stopMotors();
         }
 
 	}

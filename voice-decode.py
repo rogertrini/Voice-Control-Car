@@ -3,7 +3,7 @@
 # component does not support iOS so laptop microphone/bluetooth are used.
 
 # To install speech recognition dependency / package:
-#   pip install pyserialSpeechRecognition pyaudio 
+#   pip install pyserial SpeechRecognition pyaudio 
 #   python -m pip install pyaudio
 import serial
 import speech_recognition as sr
@@ -39,7 +39,7 @@ while True:
         with mic as source:
             # prompt the user for command
             print("Say command...")
-            audio = recognizer.listen(source)
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=3)
 
         # decode what was said and echo back to user
         text = recognizer.recognize_google(audio).lower()
@@ -49,11 +49,15 @@ while True:
         for word, cmd in commands.items():
             if word in text:
                 ser.write(cmd)
-                print("Sent: ", cmd)
+                print("Sent: ", cmd.decode())
                 break #leave loop, no need to check whole list
     # if message not found in list or not understood
-    except sr.UnkownValueError:
-        print("I could not understand.")
+    except sr.UnknownValueError:
+        print("I could not understand.")\
+    
+    # time out exception
+    except sr.WaitTimeoutError:
+        print("No speech detected.")
 
     # add keyboard interrupt to hard stop operations
     except KeyboardInterrupt:
