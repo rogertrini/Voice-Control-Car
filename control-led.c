@@ -23,11 +23,41 @@ void UART_init(){
 	UCSR0C (1 << UCSZ01) | (1 << UCSZ00); // 8-bit data
 }
 
+void UART_sendChar(char data){
+    while (!(UCSR0A & (1 << UDRE0))); // wait until transmit buffer empty
+    UDR0 = data;
+}
+
 // receive one character
 char UART_receive(){
 	while(!(UCSR0A & (1 << RXC0))); // Wait for data
 	return UDR0;
 }
+
+void UART_sendString(const char *str){
+    while (*str){
+        UART_sendChar(*str);
+        str++;
+    }
+}
+
+void UART_receiveString(char *buffer, uint8_t max_len){
+    uint8_t i = 0;
+    char c;
+
+    while (i < (max_len - 1)){
+        c = UART_receive();
+
+        if (c == '\n' || c == '\r'){
+            break;
+        }
+
+        buffer[i++] = c;
+    }
+
+    buffer[i] = '\0'; // null terminate
+}
+
 
 // main program that implements the outputs to 4 leds
 // it maps the characters F, B, L, R (forward, back, left, right)

@@ -4,12 +4,13 @@
 
 # To install speech recognition dependency / package:
 #   pip install pyserialSpeechRecognition pyaudio 
+#   python -m pip install pyaudio
 import serial
 import speech_recognition as sr
 import time
 
 #Change COM3 to ATMega/HC-06 COM Port
-ser = serial.Serial("COM3", 9600, timeout=1)
+ser = serial.Serial("COM4", 9600, timeout=1)
 time.sleep(2)
 
 recognizer = sr.Recognizer()
