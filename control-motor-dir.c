@@ -11,7 +11,7 @@
 // of the motors. This gives a simple left and right direction control.
 #define F_CPU 16000000UL
 #include <avr/io.h>
-
+#include <util/delay.h>
 
 // initialize UART (9600 baud rate)
 void UART_init(){
@@ -130,21 +130,29 @@ int main(void){
             // both sides forward
             PORTD |= (1 << PD2) | (1 << PD4);
             setSpeed(180,180);
+            _delay_ms(4000);
+            stopMotors();
         }
         else if (cmd == 'B'){
             // both sides backward
             PORTD |= (1 << PD3) | (1 << PD5);
             setSpeed(180,180);
+            _delay_ms(4000);
+            stopMotors();
         }
         else if (cmd == 'L'){
             // turn left
-            PORTD |= (1 << PD3) | (1 << PD4);
-            setSpeed(90,180);
+            PORTD |= (1 << PD2) | (1 << PD4);
+            setSpeed(180,255);
+            _delay_ms(4000);
+            stopMotors();
         }
         else if (cmd == 'R'){
             // turn right
-            PORTD |= (1 << PD2) | (1 << PD5);
-            setSpeed(180, 90);
+            PORTD |= (1 << PD2) | (1 << PD4);
+            setSpeed(255, 180);
+            _delay_ms(4000);
+            stopMotors();
         }
         else if (cmd == 'S'){
             stopMotors();
